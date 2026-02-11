@@ -6,8 +6,13 @@ int CALLBACK WinMain(HINSTANCE hInstance,
                       LPSTR     lpCmdLine,
                       int       nShowCmd)
 {
-  MessageBoxExA(0, "THA BOX", "cool title", 
-    MB_OK|MB_ICONINFORMATION, 0);
+  WNDCLASS WindowClass = {};
+
+  WindowClass.style = ;
+  WindowClass.lpfnWndProc = ;
+  WindowClass.hInstance = hInstance;
+  // WindowClass.hIcon;
+  WindowClass.lpszClassName = "WindowName"
   return 0;
 }
 
