@@ -1,9 +1,25 @@
 #include <Windows.h>
 
+#define global static
+#define local_persist static
+#define internal static
+
+
+global bool Running;
+
+
+internal void Win32UpdateWindow(HWND Window, int X, int Y, int Width, int Height)
+{
+  
+}
+internal void ResizeDIBSection(int Width, int Height) // Device Independent Bitmap
+{
+
+} 
 
 
 
-LRESULT MainWindowCallback(
+LRESULT Win32MainWindowCallback(
   HWND Window,
   UINT Message,
   WPARAM WParam,
@@ -15,22 +31,39 @@ LRESULT MainWindowCallback(
   {
     case WM_SIZE:
     {
+      RECT ClientRect;
+      GetClientRect(Window, &ClientRect);
+      int Width = ClientRect.right - ClientRect.left;
+      int Height = ClientRect.bottom - ClientRect.top;
+      ResizeDIBSection(Width, Height);
       OutputDebugStringA("WM_SIZE\n");
     } break;
 
     case WM_DESTROY:
     {
-      OutputDebugStringA("WM_DESTROY\n");
+      Running = false;
     } break;
 
     case WM_CLOSE:
     {
-      OutputDebugStringA("WM_CLOSE\n");
+      Running = false;
     } break;
 
     case WM_ACTIVATEAPP:
     {
       OutputDebugStringA("WM_ACTIVATEAPP\n");
+    } break;
+
+    case WM_PAINT:
+    { 
+      PAINTSTRUCT Paint;
+      HDC DeviceContext = BeginPaint(Window, &Paint);
+      int X = Paint.rcPaint.left;
+      int Y = Paint.rcPaint.top;
+      int Width = Paint.rcPaint.right - Paint.rcPaint.left;
+      int Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
+      Win32UpdateWindow(Window, X, Y, Width, Height);
+      EndPaint(Window, &Paint); 
     } break;
 
     default:
@@ -53,7 +86,7 @@ WinMain(HINSTANCE Instance,
   WNDCLASS WindowClass = {};
 
   WindowClass.style = CS_HREDRAW|CS_OWNDC|CS_VREDRAW;
-  WindowClass.lpfnWndProc = MainWindowCallback;
+  WindowClass.lpfnWndProc = Win32MainWindowCallback;
   WindowClass.hInstance = Instance;
   // WindowClass.hIcon;
   WindowClass.lpszClassName = "WindowName";
@@ -75,9 +108,10 @@ WinMain(HINSTANCE Instance,
         0);
     if (WindowHandle != NULL) 
     {
-      MSG Message;
-      for(;;) // equiv to while(1)
+      while(Running)
       {
+        Running = true;
+        MSG Message;
         BOOL MessageResult = GetMessage(&Message, 0, 0, 0);
         if(MessageResult > 0) 
         {
