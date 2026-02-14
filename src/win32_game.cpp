@@ -6,16 +6,44 @@
 
 
 global bool Running;
+global BITMAPINFO BitmapInfo;
+global void *BitmapMemory;
+global HBITMAP BitmapHandle;
 
 
-internal void Win32UpdateWindow(HWND Window, int X, int Y, int Width, int Height)
+
+internal void Win32ResizeDIBSection(int Width, int Height) // Device Independent Bitmap
 {
-  
-}
-internal void ResizeDIBSection(int Width, int Height) // Device Independent Bitmap
-{
+  if(BitmapHandle)
+  {
+    DeleteObject(BitmapHandle);
+  }
+
+  BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
+  BitmapInfo.bmiHeader.biWidth = Width;
+  BitmapInfo.bmiHeader.biHeight = Height;
+  BitmapInfo.bmiHeader.biPlanes = 1;
+  BitmapInfo.bmiHeader.biBitCount = 32;
+  BitmapInfo.bmiHeader.biCompression = BI_RGB;
+
+  HDC DeviceContext = CreateCompatibleDC(0);
+  HBITMAP BitmapHandle = CreateDIBSection(
+    DeviceContext, &BitmapInfo,
+    DIB_RGB_COLORS, &BitmapMemory,
+    0, 0);
 
 } 
+
+internal void Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width, int Height)
+{
+  StretchDIBits(DeviceContext, X, Y, Width, Height,
+                X, Y, Width, Height, 
+                const VOID *lpBits, 
+                const BITMAPINFO *lpbmi,
+                DIB_RGB_COLORS, SRCCOPY);
+}
+
+
 
 
 
@@ -35,7 +63,7 @@ LRESULT Win32MainWindowCallback(
       GetClientRect(Window, &ClientRect);
       int Width = ClientRect.right - ClientRect.left;
       int Height = ClientRect.bottom - ClientRect.top;
-      ResizeDIBSection(Width, Height);
+      Win32ResizeDIBSection(Width, Height);
       OutputDebugStringA("WM_SIZE\n");
     } break;
 
@@ -62,7 +90,7 @@ LRESULT Win32MainWindowCallback(
       int Y = Paint.rcPaint.top;
       int Width = Paint.rcPaint.right - Paint.rcPaint.left;
       int Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
-      Win32UpdateWindow(Window, X, Y, Width, Height);
+      Win32UpdateWindow(DeviceContext, X, Y, Width, Height);
       EndPaint(Window, &Paint); 
     } break;
 
