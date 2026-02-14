@@ -6,9 +6,11 @@
 
 
 global bool Running;
+
 global BITMAPINFO BitmapInfo;
 global void *BitmapMemory;
 global HBITMAP BitmapHandle;
+global HDC BitmapDeviceContext;
 
 
 
@@ -17,6 +19,10 @@ internal void Win32ResizeDIBSection(int Width, int Height) // Device Independent
   if(BitmapHandle)
   {
     DeleteObject(BitmapHandle);
+  } 
+  if(!BitmapDeviceContext)
+  {
+    BitmapDeviceContext = CreateCompatibleDC(0);
   }
 
   BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
@@ -26,28 +32,24 @@ internal void Win32ResizeDIBSection(int Width, int Height) // Device Independent
   BitmapInfo.bmiHeader.biBitCount = 32;
   BitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-  HDC DeviceContext = CreateCompatibleDC(0);
-  HBITMAP BitmapHandle = CreateDIBSection(
-    DeviceContext, &BitmapInfo,
+  
+  BitmapHandle = CreateDIBSection(
+    BitmapDeviceContext, &BitmapInfo,
     DIB_RGB_COLORS, &BitmapMemory,
     0, 0);
-
 } 
 
 internal void Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width, int Height)
 {
   StretchDIBits(DeviceContext, X, Y, Width, Height,
                 X, Y, Width, Height, 
-                const VOID *lpBits, 
-                const BITMAPINFO *lpbmi,
+                BitmapMemory, 
+                &BitmapInfo,
                 DIB_RGB_COLORS, SRCCOPY);
 }
 
 
-
-
-
-LRESULT Win32MainWindowCallback(
+LRESULT CALLBACK Win32MainWindowCallback(
   HWND Window,
   UINT Message,
   WPARAM WParam,
@@ -136,9 +138,9 @@ WinMain(HINSTANCE Instance,
         0);
     if (WindowHandle != NULL) 
     {
+      Running = true;
       while(Running)
       {
-        Running = true;
         MSG Message;
         BOOL MessageResult = GetMessage(&Message, 0, 0, 0);
         if(MessageResult > 0) 
